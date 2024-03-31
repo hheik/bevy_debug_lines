@@ -171,9 +171,7 @@ pub mod r3d {
         let draw_custom = opaque_3d_draw_functions.read().get_id::<DrawDebugLines>().unwrap();
         let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples());
         for (view, mut transparent_phase) in views.iter_mut() {
-            let view_matrix = view.transform.compute_matrix();
-            let view_row_2 = view_matrix.row(2);
-            for (entity) in instance_entities.iter() {
+            for entity in instance_entities.iter() {
                 if let Some(render_mesh_instance) = render_mesh_instances.get(&entity) {
                     if let Some(mesh) = render_meshes.get(render_mesh_instance.mesh_asset_id) {
                         let mesh_key = msaa_key
@@ -188,13 +186,11 @@ pub mod r3d {
                             )
                             .unwrap();
 
-                        let transform = render_mesh_instance.transforms.transform.translation.extend(1.0);
-
                         transparent_phase.add(Opaque3d {
+                            asset_id: render_mesh_instance.mesh_asset_id,
                             entity,
                             pipeline,
                             draw_function: draw_custom,
-                            distance: view_row_2.dot(transform),
                             batch_range: 0..0,
                             dynamic_offset: None,
                         });

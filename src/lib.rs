@@ -4,16 +4,14 @@ use bevy::{
     pbr::{NotShadowCaster, NotShadowReceiver},
     prelude::*,
     render::{
-        Extract,
-        mesh::{/*Indices,*/ Mesh, VertexAttributeValues},
-        Render,
+        mesh::{Mesh, MeshVertexAttribute, VertexAttributeValues},
+        render_asset::RenderAssetUsages,
         render_phase::AddRenderCommand,
-        render_resource::PrimitiveTopology,
-        render_resource::Shader, view::{NoFrustumCulling, RenderLayers},
+        render_resource::{PrimitiveTopology, Shader, VertexFormat},
+        view::{NoFrustumCulling, RenderLayers},
+        Extract, Render,
     },
 };
-use bevy::render::mesh::MeshVertexAttribute;
-use bevy::render::render_resource::VertexFormat;
 
 use shapes::AddLines;
 
@@ -30,10 +28,10 @@ mod render_dim;
 // gates-specific code.
 #[cfg(feature = "3d")]
 mod dim {
-    use bevy::{asset::Handle, render::mesh::Mesh};
     pub(crate) use bevy::core_pipeline::core_3d::Opaque3d as Phase;
+    use bevy::{asset::Handle, render::mesh::Mesh};
 
-    pub(crate) use crate::render_dim::r3d::{DebugLinePipeline, DrawDebugLines, queue};
+    pub(crate) use crate::render_dim::r3d::{queue, DebugLinePipeline, DrawDebugLines};
 
     pub(crate) type MeshHandle = Handle<Mesh>;
 
@@ -50,10 +48,10 @@ mod dim {
 
 #[cfg(not(feature = "3d"))]
 mod dim {
-    use bevy::{asset::Handle, render::mesh::Mesh, sprite::Mesh2dHandle};
     pub(crate) use bevy::core_pipeline::core_2d::Transparent2d as Phase;
+    use bevy::{asset::Handle, render::mesh::Mesh, sprite::Mesh2dHandle};
 
-    pub(crate) use crate::render_dim::r2d::{DebugLinePipeline, DrawDebugLines, queue};
+    pub(crate) use crate::render_dim::r2d::{queue, DebugLinePipeline, DrawDebugLines};
 
     pub(crate) type MeshHandle = Mesh2dHandle;
 
@@ -236,7 +234,7 @@ fn setup(mut cmds: Commands, mut meshes: ResMut<Assets<Mesh>>, config: Res<Debug
     // Spawn a bunch of meshes to use for lines.
     for i in 0..MESH_COUNT {
         // Create a new mesh with the number of vertices we need.
-        let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+        let mut mesh = Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::default());
         mesh.insert_attribute(
             Mesh::ATTRIBUTE_POSITION,
             VertexAttributeValues::Float32x3(Vec::with_capacity(MAX_POINTS_PER_MESH)),
@@ -319,7 +317,8 @@ fn update(
         }
 
         // This is needed only to keep padding aligned with 16 bytes in WASM
-        #[cfg(target_arch = "wasm32")] {
+        #[cfg(target_arch = "wasm32")]
+        {
             use VertexAttributeValues::Float32;
 
             if let Some(Float32(buffer)) = mesh.attribute_mut(crate::MESH_PADDING) {
